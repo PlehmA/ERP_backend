@@ -44,6 +44,7 @@ class UserController extends Controller
 
         $user = new User([
             'username' => $request->input('username'),
+            'name'     => $request->input('name'),
             'password' => base64($request->input('password'))
         ]);
 
