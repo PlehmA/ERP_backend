@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
 use App\User;
+use Tymon\JWTAuth\Exceptions\JWTException;
+use JWTAuth;
 
 class UserController extends Controller
 {
@@ -39,18 +41,51 @@ class UserController extends Controller
     public function signUp(Request $request)
     {
         $this->validate($request, [
+            'name'     =>  'required|string',
             'username' => 'required|unique:users',
-            'email'     => 'string',
+            'email'     => 'required|string',
             'password' => 'required'
         ]);
 
         $user = new User([
+            'name'  => $request->input('name'),
             'username' => $request->input('username'),
             'email'     => $request->input('email'),
-            'password' => base64($request->input('password'))
+            'password' => base64_encode($request->input('password'))
         ]);
 
+        $user->save();
+
         return response()->json($user, 201);
+
+    }
+    public function signIn(Request $request)
+    {
+        $this->validate($request, [
+            'username' => 'required',
+            'password' => 'required'
+        ]);
+
+        $pass = base64_encode($request->input('password'));
+
+        $credentials = $request->only('username', $pass);
+
+        try{
+            if (!$token == JWTAuth::attempt($credentials)) {
+                return response()->json([
+                    'error' => 'Usuario y/o contraseña invalidos.'
+                ], 401);
+            }
+        }catch(JWTException $e){
+            return response()->json([
+                'error' => 'No se puede crear el token.'
+            ], 500);
+
+        }
+
+        return response()->json([
+            'token' => $token
+        ], 200);
 
     }
 
@@ -120,9 +155,5 @@ class UserController extends Controller
         return response()->json(['message' => 'Usuario eliminado correctamente.'], 200);
     }
 
-    public function signIn(Request $request){
-        $this->validate($request, [
-            'username' => 'required '
-        ]);
-    }
+    
 }
